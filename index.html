@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>인비절라인 착용 트래커</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f3;color:#1a1a1a;min-height:100vh;padding:2rem 1rem}
+.wrap{max-width:700px;margin:0 auto}
+h1{font-size:20px;font-weight:600;margin-bottom:1.5rem;color:#1a1a1a}
+.card{background:#fff;border:1px solid #e5e5e3;border-radius:12px;padding:1.25rem;margin-bottom:1rem}
+.card-title{font-size:14px;font-weight:600;color:#1a1a1a;margin-bottom:4px}
+.card-desc{font-size:12px;color:#6b6b6b;margin-bottom:14px;line-height:1.6}
+label{font-size:12px;color:#6b6b6b;display:block;margin-bottom:4px}
+input[type=text],input[type=date],input[type=time]{width:100%;height:38px;border:1px solid #d5d5d3;border-radius:8px;padding:0 10px;font-size:13px;color:#1a1a1a;background:#fff;outline:none}
+input:focus{border-color:#0066cc;box-shadow:0 0 0 3px rgba(0,102,204,.12)}
+.field{margin-bottom:10px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.row .field{flex:1;min-width:110px;margin-bottom:0}
+button{height:38px;padding:0 16px;border:1px solid #d5d5d3;border-radius:8px;background:#fff;color:#1a1a1a;font-size:13px;cursor:pointer;white-space:nowrap}
+button:hover{background:#f5f5f3}
+button:disabled{opacity:.4;cursor:default}
+.btn-primary{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.btn-primary:hover{background:#333}
+.btn-danger{color:#cc0000;border-color:#ffcccc}
+.btn-danger:hover{background:#fff5f5}
+.btn-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.msg{font-size:12px;margin-top:8px;min-height:16px;color:#6b6b6b}
+.msg.ok{color:#1a7a4a}
+.msg.err{color:#cc0000}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1rem}
+.stat{background:#f5f5f3;border-radius:8px;padding:.85rem 1rem}
+.stat-label{font-size:11px;color:#6b6b6b;margin-bottom:4px}
+.stat-value{font-size:22px;font-weight:600;color:#1a1a1a}
+.stat-sub{font-size:11px;color:#999;margin-top:2px}
+.alert-next{background:#e6f5ee;border:1px solid #a8d8bc;border-radius:8px;padding:.75rem 1rem;font-size:13px;color:#1a7a4a;margin-bottom:1rem;display:none}
+.status-bar{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;font-size:12px;margin-bottom:1rem}
+.status-bar.ok{background:#e6f5ee;color:#1a7a4a}
+.status-bar.err{background:#fff0f0;color:#cc0000}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0}
+.tabs{display:flex;gap:0;border-bottom:1px solid #e5e5e3;margin-bottom:1rem}
+.tab{padding:7px 16px;font-size:13px;border:none;background:none;color:#6b6b6b;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab.active{color:#1a1a1a;border-bottom-color:#1a1a1a;font-weight:600}
+.tab:hover{color:#1a1a1a}
+.day-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f0f0ee;font-size:13px}
+.day-row:last-child{border-bottom:none}
+.pbar-wrap{flex:1;height:6px;background:#f0f0ee;border-radius:999px;overflow:hidden}
+.pbar{height:100%;border-radius:999px;background:#1a1a1a;transition:width .3s}
+.pbar.done{background:#1a7a4a}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600}
+.badge-green{background:#e6f5ee;color:#1a7a4a}
+.badge-blue{background:#e6f0ff;color:#0055cc}
+.badge-amber{background:#fff8e6;color:#996600}
+.hist-item{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f0f0ee;font-size:13px}
+.hist-item:last-child{border-bottom:none}
+.dev-row{padding:10px 0;border-bottom:1px solid #f0f0ee}
+.dev-row:last-child{border-bottom:none}
+.dev-header{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.empty{font-size:13px;color:#999;text-align:center;padding:2rem 0}
+.sql-block{background:#f5f5f3;border-radius:8px;padding:.75rem 1rem;font-size:11px;font-family:'Courier New',monospace;color:#444;line-height:1.7;white-space:pre-wrap;word-break:break-all;margin-top:8px}
+@media(max-width:500px){.stats{grid-template-columns:repeat(2,1fr)}.row .field{min-width:90px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>인비절라인 착용 트래커</h1>
+
+  <div id="setup-section">
+    <div class="card">
+      <div class="card-title">1단계 — Supabase 테이블 생성</div>
+      <div class="card-desc">Supabase → SQL Editor에서 아래 SQL을 실행하세요. 이미 실행했다면 2단계로 바로 이동하세요.</div>
+      <div class="sql-block">CREATE TABLE IF NOT EXISTS invisalign_devices (
+  id SERIAL PRIMARY KEY,
+  device_num INTEGER NOT NULL,
+  start_date DATE NOT NULL,
+  end_date DATE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS invisalign_entries (
+  id SERIAL PRIMARY KEY,
+  device_id INTEGER REFERENCES invisalign_devices(id) ON DELETE CASCADE,
+  entry_date DATE NOT NULL,
+  start_time TIME NOT NULL,
+  end_time TIME NOT NULL,
+  unworn_minutes INTEGER NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE invisalign_devices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE invisalign_entries ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "allow_all_devices" ON invisalign_devices FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "allow_all_entries" ON invisalign_entries FOR ALL USING (true) WITH CHECK (true);</div>
+      <button onclick="copySQL()" style="margin-top:8px;font-size:12px;height:30px;padding:0 12px" id="copy-btn">SQL 복사</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">2단계 — API 키 입력</div>
+      <div class="card-desc">Supabase → Project Settings → API 에서 URL과 anon public key를 복사하세요.</div>
+      <div class="field"><label>Project URL</label><input type="text" id="sb-url" placeholder="https://xxxxxxxxxxxx.supabase.co"></div>
+      <div class="field"><label>Anon Public Key</label><input type="text" id="sb-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."></div>
+      <div class="btn-row">
+        <button class="btn-primary" onclick="connectSupabase()">연결 테스트</button>
+        <button onclick="loadSaved()">저장된 키 불러오기</button>
+      </div>
+      <div class="msg" id="connect-msg"></div>
+    </div>
+  </div>
+
+  <div id="main-section" style="display:none">
+    <div class="status-bar ok">
+      <div class="dot"></div>
+      <span id="conn-label">Supabase 연결됨</span>
+      <button style="margin-left:auto;height:26px;padding:0 10px;font-size:11px" onclick="disconnect()">연결 해제</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-label">현재 장치</div><div class="stat-value" id="s-device">-</div><div class="stat-sub">번째 장치</div></div>
+      <div class="stat"><div class="stat-label">완료 착용일</div><div class="stat-value" id="s-days">-</div><div class="stat-sub" id="s-total">/ 7일</div></div>
+      <div class="stat"><div class="stat-label">오늘 착용시간</div><div class="stat-value" id="s-today">-</div><div class="stat-sub">시간 (목표 20h)</div></div>
+      <div class="stat"><div class="stat-label">완료 장치</div><div class="stat-value" id="s-done">-</div><div class="stat-sub">개</div></div>
+    </div>
+
+    <div class="alert-next" id="complete-alert">다음 장치로 교체하세요! 현재 장치 7일 착용 완료.</div>
+
+    <div class="card">
+      <div class="card-title" style="margin-bottom:1rem">미착용 시간 입력</div>
+      <div class="row">
+        <div class="field"><label>날짜</label><input type="date" id="in-date"></div>
+        <div class="field"><label>미착용 시작</label><input type="time" id="in-start"></div>
+        <div class="field"><label>미착용 종료</label><input type="time" id="in-end"></div>
+        <button class="btn-primary" id="add-btn" onclick="addEntry()" style="flex-shrink:0">추가</button>
+      </div>
+      <div class="msg" id="add-msg"></div>
+    </div>
+
+    <div class="card">
+      <div class="tabs">
+        <button class="tab active" onclick="showTab('daily')">날짜별</button>
+        <button class="tab" onclick="showTab('devices')">장치별</button>
+        <button class="tab" onclick="showTab('log')">기록 상세</button>
+      </div>
+      <div id="tab-daily"><div class="empty" id="daily-list">불러오는 중...</div></div>
+      <div id="tab-devices" style="display:none"><div class="empty" id="device-list">불러오는 중...</div></div>
+      <div id="tab-log" style="display:none"><div class="empty" id="log-list">불러오는 중...</div></div>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button onclick="nextDevice()">다음 장치로 교체</button>
+      <button onclick="loadAll()">새로고침</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let SB_URL='', SB_KEY='';
+let currentDevice=null, allDevices=[], allEntries=[];
+
+function sbFetch(path, opts={}){
+  return fetch(SB_URL+'/rest/v1/'+path,{
+    ...opts,
+    headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':opts.prefer||'return=representation',...(opts.headers||{})}
+  });
+}
+
+function copySQL(){
+  const t=document.querySelector('.sql-block').textContent;
+  navigator.clipboard.writeText(t).then(()=>{
+    const b=document.getElementById('copy-btn');b.textContent='복사됨!';setTimeout(()=>b.textContent='SQL 복사',1500);
+  });
+}
+
+function loadSaved(){
+  try{const s=localStorage.getItem('sb_invisalign');if(s){const d=JSON.parse(s);document.getElementById('sb-url').value=d.url||'';document.getElementById('sb-key').value=d.key||'';}}catch(e){}
+}
+
+async function connectSupabase(){
+  const url=document.getElementById('sb-url').value.trim().replace(/\/$/,'');
+  const key=document.getElementById('sb-key').value.trim();
+  const msg=document.getElementById('connect-msg');
+  if(!url||!key){msg.className='msg err';msg.textContent='URL과 키를 모두 입력해주세요.';return;}
+  msg.className='msg';msg.textContent='연결 확인 중...';
+  SB_URL=url;SB_KEY=key;
+  try{
+    const r=await sbFetch('invisalign_devices?select=id&limit=1');
+    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.message||'HTTP '+r.status);}
+    try{localStorage.setItem('sb_invisalign',JSON.stringify({url,key}));}catch(e){}
+    msg.textContent='';
+    document.getElementById('setup-section').style.display='none';
+    document.getElementById('main-section').style.display='block';
+    document.getElementById('in-date').value=todayStr();
+    await loadAll();
+  }catch(e){
+    SB_URL='';SB_KEY='';
+    msg.className='msg err';
+    msg.textContent='연결 실패: '+e.message;
+  }
+}
+
+function disconnect(){
+  SB_URL='';SB_KEY='';
+  document.getElementById('setup-section').style.display='block';
+  document.getElementById('main-section').style.display='none';
+}
+
+function todayStr(){return new Date().toISOString().slice(0,10);}
+function timeToMin(t){const[h,m]=t.split(':').map(Number);return h*60+m;}
+function minToHour(m){return (m/60).toFixed(1)+'h';}
+
+async function loadAll(){
+  try{
+    const [devR,entR]=await Promise.all([
+      sbFetch('invisalign_devices?select=*&order=device_num.asc'),
+      sbFetch('invisalign_entries?select=*&order=entry_date.asc,created_at.asc')
+    ]);
+    allDevices=await devR.json();allEntries=await entR.json();
+    if(!Array.isArray(allDevices))allDevices=[];
+    if(!Array.isArray(allEntries))allEntries=[];
+    if(allDevices.length===0){
+      await sbFetch('invisalign_devices',{method:'POST',body:JSON.stringify({device_num:1,start_date:todayStr()})});
+      return loadAll();
+    }
+    currentDevice=allDevices[allDevices.length-1];
+    renderStats();renderDaily();renderDevices();renderLog();
+  }catch(e){setMsg('add-msg','데이터 로드 오류: '+e.message,'err');}
+}
+
+function getEntriesForDevice(id){return allEntries.filter(e=>e.device_id===id);}
+function calcWornMin(entries,date){return Math.max(0,24*60-entries.filter(e=>e.entry_date===date).reduce((a,e)=>a+e.unworn_minutes,0));}
+function calcTotalWornMin(entries){
+  const dates=[...new Set(entries.map(e=>e.entry_date))];
+  return dates.reduce((sum,d)=>sum+calcWornMin(entries,d),0);
+}
+function getCompletedDays(entries){return Math.floor(calcTotalWornMin(entries)/1200);}
+
+function setMsg(id,text,cls=''){const el=document.getElementById(id);el.className='msg'+(cls?' '+cls:'');el.textContent=text;}
+
+function renderStats(){
+  if(!currentDevice)return;
+  const entries=getEntriesForDevice(currentDevice.id);
+  const totalMin=calcTotalWornMin(entries);
+  const days=getCompletedDays(entries);
+  const remainMin=1200-(totalMin%1200);
+  document.getElementById('s-device').textContent=currentDevice.device_num;
+  document.getElementById('s-days').textContent=days;
+  document.getElementById('s-total').textContent=`누적 ${(totalMin/60).toFixed(1)}h / 7일`;
+  document.getElementById('s-today').textContent=(calcWornMin(entries,todayStr())/60).toFixed(1);
+  document.getElementById('s-done').textContent=allDevices.filter(d=>d.end_date).length;
+  document.getElementById('complete-alert').style.display=days>=7?'block':'none';
+}
+
+function renderDaily(){
+  const entries=getEntriesForDevice(currentDevice.id);
+  const dates=[...new Set(entries.map(e=>e.entry_date))].sort().reverse();
+  const el=document.getElementById('daily-list');
+  if(!dates.length){el.className='empty';el.textContent='기록이 없습니다';return;}
+  el.className='';
+  el.innerHTML=dates.map(d=>{
+    const worn=calcWornMin(entries,d),pct=Math.min(100,Math.round(worn/(20*60)*100)),done=worn>=20*60;
+    return `<div class="day-row"><span style="color:#6b6b6b;min-width:95px">${d}</span><div class="pbar-wrap"><div class="pbar${done?' done':''}" style="width:${pct}%"></div></div><span style="font-size:12px;color:#6b6b6b;min-width:40px;text-align:right">${(worn/60).toFixed(1)}h</span><span class="badge ${done?'badge-green':'badge-amber'}">${done?'완료':pct+'%'}</span></div>`;
+  }).join('');
+}
+
+function renderDevices(){
+  const el=document.getElementById('device-list');
+  if(!allDevices.length){el.className='empty';el.textContent='기록이 없습니다';return;}
+  el.className='';
+  el.innerHTML=[...allDevices].reverse().map(dev=>{
+    const entries=getEntriesForDevice(dev.id),days=getCompletedDays(entries),pct=Math.min(100,Math.round(days/7*100)),done=!!dev.end_date;
+    return `<div class="dev-row"><div class="dev-header"><span style="font-size:13px;font-weight:600">${dev.device_num}번 장치</span><span class="badge ${done?'badge-green':'badge-blue'}">${done?'완료':'진행중'}</span><span style="font-size:12px;color:#6b6b6b">${dev.end_date?dev.start_date+' ~ '+dev.end_date:dev.start_date+' ~ 진행중'}</span></div><div style="display:flex;align-items:center;gap:8px"><div class="pbar-wrap"><div class="pbar${done?' done':''}" style="width:${pct}%"></div></div><span style="font-size:12px;color:#6b6b6b;min-width:50px;text-align:right">${days}/7일</span></div></div>`;
+  }).join('');
+}
+
+function renderLog(){
+  const entries=getEntriesForDevice(currentDevice.id);
+  const el=document.getElementById('log-list');
+  if(!entries.length){el.className='empty';el.textContent='기록이 없습니다';return;}
+  el.className='';
+  el.innerHTML=[...entries].reverse().map(e=>`<div class="hist-item"><span style="color:#6b6b6b;min-width:95px">${e.entry_date}</span><span style="flex:1">${e.start_time.slice(0,5)} ~ ${e.end_time.slice(0,5)}</span><span style="color:#6b6b6b;font-size:12px">(${minToHour(e.unworn_minutes)})</span><button class="btn-danger" style="height:26px;padding:0 8px;font-size:11px" onclick="deleteEntry(${e.id})">삭제</button></div>`).join('');
+}
+
+async function addEntry(){
+  const d=document.getElementById('in-date').value,s=document.getElementById('in-start').value,e=document.getElementById('in-end').value;
+  if(!d||!s||!e){setMsg('add-msg','날짜와 시간을 모두 입력해주세요.','err');return;}
+  const sM=timeToMin(s),eM=timeToMin(e);
+  let unworn=eM>=sM?eM-sM:(24*60-sM)+eM;
+  if(unworn<=0){setMsg('add-msg','시간을 확인해주세요.','err');return;}
+  document.getElementById('add-btn').disabled=true;
+  setMsg('add-msg','저장 중...');
+  try{
+    const r=await sbFetch('invisalign_entries',{method:'POST',body:JSON.stringify({device_id:currentDevice.id,entry_date:d,start_time:s,end_time:e,unworn_minutes:unworn})});
+    if(!r.ok)throw new Error((await r.json().catch(()=>({}))).message||r.status);
+    setMsg('add-msg',`미착용 ${minToHour(unworn)} 저장 완료. (착용 ${minToHour(24*60-unworn)})`,'ok');
+    await loadAll();
+  }catch(err){setMsg('add-msg','저장 실패: '+err.message,'err');}
+  document.getElementById('add-btn').disabled=false;
+}
+
+async function deleteEntry(id){
+  if(!confirm('이 기록을 삭제할까요?'))return;
+  await sbFetch('invisalign_entries?id=eq.'+id,{method:'DELETE',prefer:'',headers:{}});
+  await loadAll();
+}
+
+async function nextDevice(){
+  if(!currentDevice||!confirm('현재 장치를 완료 처리하고 다음 장치로 교체할까요?'))return;
+  try{
+    await sbFetch('invisalign_devices?id=eq.'+currentDevice.id,{method:'PATCH',body:JSON.stringify({end_date:todayStr()}),prefer:'',headers:{}});
+    await sbFetch('invisalign_devices',{method:'POST',body:JSON.stringify({device_num:currentDevice.device_num+1,start_date:todayStr()})});
+    await loadAll();
+  }catch(e){alert('오류: '+e.message);}
+}
+
+function showTab(t){
+  ['daily','devices','log'].forEach(id=>{document.getElementById('tab-'+id).style.display=id===t?'block':'none';});
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['daily','devices','log'][i]===t));
+}
+
+// 저장된 키가 있으면 페이지 로드 시 자동 연결
+(async function autoConnect(){
+  try{
+    const s=localStorage.getItem('sb_invisalign');
+    if(!s) return;
+    const d=JSON.parse(s);
+    if(!d.url||!d.key) return;
+    document.getElementById('sb-url').value=d.url;
+    document.getElementById('sb-key').value=d.key;
+    SB_URL=d.url; SB_KEY=d.key;
+    const msg=document.getElementById('connect-msg');
+    msg.className='msg'; msg.textContent='자동 연결 중...';
+    const r=await sbFetch('invisalign_devices?select=id&limit=1');
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    msg.textContent='';
+    document.getElementById('setup-section').style.display='none';
+    document.getElementById('main-section').style.display='block';
+    document.getElementById('in-date').value=todayStr();
+    await loadAll();
+  }catch(e){
+    SB_URL=''; SB_KEY='';
+    const msg=document.getElementById('connect-msg');
+    msg.className='msg err';
+    msg.textContent='자동 연결 실패. URL과 키를 다시 확인해주세요.';
+  }
+})();
+</script>
+</body>
+</html>
